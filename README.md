@@ -118,58 +118,51 @@ DeviceLogonEvents
 | summarize LoginCount = count() by DeviceName, ActionType, AccountName, RemoteIP
 | order by LoginCount desc
 ```
-## Finding:
-All successful logons originated from expected and normal IP locations.
-MITRE ATT&CK Mapping
+### Finding
+**All successful logons originated from expected and normal IP locations.**
 
-TA0006 – Credential Access
+---
 
-    T1110 – Brute Force
+## MITRE ATT&CK Mapping
 
-        T1110.001 – Password Guessing
+### TA0006 – Credential Access
+- **T1110 – Brute Force**
+  - **T1110.001 – Password Guessing**
 
-TA0001 – Initial Access / TA0005 – Defense Evasion
+---
 
-    T1078 – Valid Accounts
+### TA0001 – Initial Access / TA0005 – Defense Evasion
+- **T1078 – Valid Accounts**
+  - Legitimate accounts observed
+  - No evidence of misuse or compromise
 
-        Legitimate accounts observed
+---
 
-        No evidence of misuse or compromise
+### TA0001 – Initial Access (Contextual)
+- **T1190 – Exploit Public-Facing Application**
+  - Internet exposure noted (no exploit observed)
 
-TA0001 – Initial Access (Contextual)
+---
 
-    T1190 – Exploit Public-Facing Application
+## Response Actions
+- Hardened NSG to restrict RDP to approved endpoints
+- Removed public internet exposure
+- Implemented account lockout policy
+- Implemented Multi-Factor Authentication (MFA)
 
-        Internet exposure noted (no exploit observed)
+---
 
-Response Actions
+## Final Assessment
+- External brute-force activity detected
+- No successful brute-force authentication
+- No unauthorized access identified
+- Security posture improved post-incident
 
-    Hardened NSG to restrict RDP to approved endpoints
+---
 
-    Removed public internet exposure
-
-    Implemented account lockout policy
-
-    Implemented Multi-Factor Authentication (MFA)
-
-Final Assessment
-
-    External brute-force activity detected
-
-    No successful brute-force authentication
-
-    No unauthorized access identified
-
-    Security posture improved post-incident
-
-Skills Demonstrated
-
-    Microsoft Defender for Endpoint (Advanced Hunting)
-
-    KQL threat hunting
-
-    Incident investigation & validation
-
-    MITRE ATT&CK mapping
-
-    Defensive hardening and response
+## Skills Demonstrated
+- Microsoft Defender for Endpoint (Advanced Hunting)
+- KQL threat hunting
+- Incident investigation & validation
+- MITRE ATT&CK mapping
+- Defensive hardening and response
