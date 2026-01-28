@@ -1,44 +1,41 @@
-# MDE Hunt: Internet-Exposed Windows VM & RDP Brute Force Attempts
+MDE Hunt: Internet-Exposed Windows VM & RDP Brute Force Attempts
 
-This project documents a Microsoft Defender for Endpoint (MDE) hunting investigation into a Windows VM (`windows-target-1`) that was unintentionally exposed to the public internet and targeted by external brute-force login attempts.
+This project documents a Microsoft Defender for Endpoint (MDE) hunting investigation into a Windows VM (windows-target-1) that was unintentionally exposed to the public internet and targeted by external brute-force login attempts.
 
----
+Scenario Overview
 
-## Scenario Overview
+During routine maintenance, the security team investigated whether any VMs in a shared services cluster were exposed to the internet and whether any brute-force activity succeeded.
 
-During routine maintenance, the security team investigated whether any VMs in a shared services cluster (DNS, Domain Services, DHCP, etc.) were exposed to the internet and whether any brute-force activity succeeded.
+Primary Question:
+Did any external attackers successfully authenticate or compromise a valid account while the VM was internet-facing?
 
-**Primary Question:**  
-> Did any external attackers successfully authenticate or compromise a valid account while the VM was internet-facing?
+Environment
 
----
+Platform: Microsoft Defender for Endpoint (Advanced Hunting)
 
-## Environment
+OS: Windows
 
-- Platform: Microsoft Defender for Endpoint (Advanced Hunting)
-- OS: Windows
-- VM: `windows-target-1`
-- Exposure: Public internet (RDP)
+VM: windows-target-1
 
----
+Exposure: Public internet (RDP)
 
-## Timeline & Findings
-
-### 1. Internet Exposure Confirmation
+Timeline & Findings
+1. Internet Exposure Confirmation
 
 The device was confirmed to be internet-facing for several weeks.
 
-```kql
 DeviceInfo
 | where DeviceName == "windows-target-1"
 | where IsInternetFacing == true
 | order by Timestamp desc
 
+
 Last internet-facing timestamp:
 2026-01-05T22:55:11.9532147Z
+
 2. Failed Logon Attempts from External IPs
 
-Multiple external IP addresses generated repeated failed logon attempts.
+Multiple external IPs generated repeated failed logon attempts.
 
 DeviceLogonEvents
 | where DeviceName == "windows-target-1"
@@ -48,8 +45,10 @@ DeviceLogonEvents
 | summarize Attempts = count() by ActionType, RemoteIP, DeviceName
 | order by Attempts desc
 
+
 Finding:
-Activity consistent with automated password guessing / brute-force attempts.
+Activity consistent with automated password guessing.
+
 3. No Successful Logons from Top Offending IPs
 
 The IPs with the highest failure counts were checked for any successful logons.
@@ -66,8 +65,10 @@ DeviceLogonEvents
 | where ActionType == "LogonSuccess"
 | where RemoteIP has_any(RemoteIPsInQuestion)
 
+
 Result:
 No successful authentications from known brute-force IPs.
+
 4. Successful Logons (Last 30 Days)
 
 Only three accounts logged in successfully.
@@ -78,28 +79,27 @@ DeviceLogonEvents
 | where ActionType == "LogonSuccess"
 | distinct AccountName
 
-Accounts:
 
-    umfd-0
+Accounts observed:
 
-    umfd-1
+umfd-0
 
-    dwm-1
+umfd-1
+
+dwm-1
 
 5. Validate No Brute Force Against Valid Accounts
-
-Check if these accounts experienced failed logons.
-
 DeviceLogonEvents
 | where DeviceName == "windows-target-1"
 | where LogonType in ("Network", "Interactive", "RemoteInteractive", "Unlock")
 | where ActionType == "LogonFailed"
 | where AccountName in ("umfd-0", "umfd-1", "dwm-1")
 
-Result:
-No failed logons for these accounts.
-6. Validate labuser Was Not Targeted
 
+Result:
+No failed logons observed.
+
+6. Validate labuser Was Not Targeted
 DeviceLogonEvents
 | where DeviceName == "windows-target-1"
 | where LogonType == "Network"
@@ -107,73 +107,54 @@ DeviceLogonEvents
 | where AccountName == "labuser"
 | summarize FailedCount = count()
 
+
 Result:
-Zero failed logons — no brute-force attempt against labuser.
-7. Validate Successful Login IP Locations
+Zero failed logons for labuser.
 
-DeviceLogonEvents
-| where DeviceName == "windows-target-1"
-| where LogonType in ("Network", "Interactive", "RemoteInteractive", "Unlock")
-| where ActionType == "LogonSuccess"
-| where AccountName in ("umfd-0", "umfd-1", "dwm-1")
-| summarize LoginCount = count() by DeviceName, ActionType, AccountName, RemoteIP
-| order by LoginCount desc
-
-Finding:
-All successful logons originated from expected / normal IP locations.
 MITRE ATT&CK Mapping
-Observed / Relevant TTPs
 
 TA0006 – Credential Access
 
-    T1110 – Brute Force
+T1110 – Brute Force
 
-        T1110.001 – Password Guessing
-
-            Repeated failed logons from external IPs
+T1110.001 – Password Guessing
 
 TA0001 – Initial Access / TA0005 – Defense Evasion
 
-    T1078 – Valid Accounts
-
-        Legitimate accounts logged in successfully
-
-        No indicators of misuse or compromise
+T1078 – Valid Accounts
 
 TA0001 – Initial Access (Contextual)
 
-    T1190 – Exploit Public-Facing Application
-
-        System exposure noted (no exploit observed)
+T1190 – Exploit Public-Facing Application
 
 Response Actions
 
-    Hardened NSG to allow RDP only from approved endpoints
+Hardened NSG to restrict RDP to approved endpoints
 
-    Removed public internet exposure
+Removed public internet exposure
 
-    Implemented account lockout policy
+Implemented account lockout policy
 
-    Implemented Multi-Factor Authentication (MFA)
+Implemented MFA
 
 Final Assessment
 
-    ✅ External brute-force activity detected
+External brute-force activity detected
 
-    ✅ No successful brute-force authentication
+No successful brute-force authentication
 
-    ✅ No unauthorized access
+No unauthorized access identified
 
-    ✅ Security posture improved post-incident
+Security posture improved post-incident
 
 Skills Demonstrated
 
-    Microsoft Defender for Endpoint (Advanced Hunting)
+Microsoft Defender for Endpoint (Advanced Hunting)
 
-    KQL threat hunting
+KQL threat hunting
 
-    RDP brute-force analysis
+Incident response & validation
 
-    MITRE ATT&CK mapping
+MITRE ATT&CK mapping
 
-    Incident documentation & response
+Defensive hardening
